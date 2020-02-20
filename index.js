@@ -1,84 +1,63 @@
 require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const app = express();
-app.use(cors());
 
+const express = require("express");
 const axios = require("axios");
+const cors = require("cors");
+const formidableMiddleware = require("express-formidable");
+const uid2 = require("uid2");
+const app = express();
 const md5 = require("md5");
 
-const ts = 1;
-const privateKey = process.env.MARVEL_SKEY;
+app.use(cors());
+app.use(formidableMiddleware());
+
 const publicKey = process.env.MARVEL_PKEY;
+const privateKey = process.env.MARVEL_SKEY;
+const ts = uid2(8);
 const hash = md5(ts + privateKey + publicKey);
 
 app.get("/characters", async (req, res) => {
   try {
-    const page = req.query.page;
-    const limit = 100;
-    const offset = limit * (page - 1);
     const response = await axios.get(
-      `http://gateway.marvel.com/v1/public/characters?ts=${ts}&apikey=${publicKey}&hash=${hash}&orderBy=name&limit=${limit}&offset=${offset}`
+      `http://gateway.marvel.com/v1/public/characters?ts=${ts}&apikey=${publicKey}&hash=${hash}&limit=100&offset=0`
     );
+    console.log(response.data);
+
     res.json(response.data);
   } catch (error) {
-    res.json(error.message);
+    console.error(error.message);
   }
 });
 
-app.get("/characters/:id", async (req, res) => {
+app.get("/characters/comics/:id", async (req, res) => {
+  const id = req.params.id;
+
   try {
     const response = await axios.get(
-      `http://gateway.marvel.com/v1/public/characters/${req.params.id}?ts=${ts}&apikey=${publicKey}&hash=${hash}`
+      `http://gateway.marvel.com/v1/public/characters/${id}/comics?ts=${ts}&apikey=${publicKey}&hash=${hash}`
     );
+    console.log(response.data.data.results);
     res.json(response.data);
   } catch (error) {
-    res.json(error.message);
+    console.error(error.message);
   }
 });
 
 app.get("/comics", async (req, res) => {
   try {
-    const page = req.query.page;
-    const limit = 100;
-    const offset = limit * (page - 1);
     const response = await axios.get(
-      `http://gateway.marvel.com/v1/public/comics?ts=${ts}&apikey=${publicKey}&hash=${hash}&orderBy=title&limit=${limit}&offset=${offset}`
+      `http://gateway.marvel.com/v1/public/comics?ts=${ts}&apikey=${publicKey}&hash=${hash}&limit=100&offset=0`
     );
+    console.log(response.data.data.results);
     res.json(response.data);
   } catch (error) {
-    res.json(error.message);
+    console.error(error.message);
   }
 });
 
-// app.get("/user/sign_in", async (req, res) => {
-//   try {
-//     res.json("SignIn");
-//   } catch (error) {
-//     res.json(error.message);
-//   }
-// });
-
-// app.get("/user/sign_up", async (req, res) => {
-//   try {
-//     res.json("SignUp");
-//   } catch (error) {
-//     res.json(error.message);
-//   }
-// });
-
-app.get("/user/favorites", (req, res) => {
-  res.json({ message: "Favorites" });
+app.all("*", function(req, res) {
+  res.json({ message: "all routes" });
 });
-
-app.get("/", (req, res) => {
-  res.json({ message: "Hello Marvel" });
-});
-
-app.all("*", (req, res) => {
-  res.json({ message: "Route not found" });
-});
-
-app.listen(process.env.PORT, () => {
-  console.log("Server started");
+app.listen(process.env.PORT || 3001, () => {
+  console.log("server has started");
 });
